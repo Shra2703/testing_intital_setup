@@ -1,11 +1,18 @@
 import "./App.css";
-import PitchDetector from "./PitchDetector";
+// import AudioDeviceSelector from "./AudioDeviceSelector";
+import DeviceSetup from "./IntialSetup";
+// import PitchDetectionApp from "./PitchDetector2";
+// import PitchDetector from "./PitchDetector";
 
 function App() {
   return (
     <>
       <div>
-        <PitchDetector />
+        {/* <PitchDetector /> */}
+        {/* <AudioDeviceSelector /> */}
+        <DeviceSetup />
+        {/* <PitchDetectionApp /> */}
+
       </div>
     </>
   );
