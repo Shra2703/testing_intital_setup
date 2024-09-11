@@ -9,16 +9,27 @@ const DeviceSetup = () => {
   const [audioContext, setAudioContext] = useState(null);
   const [microphoneLevel, setMicrophoneLevel] = useState(0);
   const [error, setError] = useState(null);
+  const [permissionsGranted, setPermissionsGranted] = useState(false); // New state
 
-  // Fetch available devices
+  // Fetch available devices and request permissions
   useEffect(() => {
     const fetchDevices = async () => {
       try {
+        // Request camera and microphone access
+        await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        
+        // Set permissions granted flag to true after permissions are granted
+        setPermissionsGranted(true);
+        
+        // Fetch device list
         const deviceList = await navigator.mediaDevices.enumerateDevices();
         setDevices(deviceList);
       } catch (err) {
-        console.error('Error enumerating devices:', err);
-        setError('Unable to fetch devices. Please check your browser settings.');
+        console.error('Error accessing devices:', err);
+        setError('Permissions denied. Please allow access to your camera and microphone.');
       }
     };
 
@@ -108,55 +119,61 @@ const DeviceSetup = () => {
       
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* Camera selection */}
-      <div>
-        <label>Select Camera:</label>
-        <select onChange={(e) => setSelectedCamera(e.target.value)}>
-          <option value="">Choose Camera</option>
-          {devices.filter((device) => device.kind === 'videoinput').map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Camera ${device.deviceId}`}
-            </option>
-          ))}
-        </select>
-        <button onClick={startCameraPreview}>Start Camera</button>
-      </div>
-      <video id="cameraPreview" width="400" autoPlay />
+      {!permissionsGranted && <p>Requesting camera and microphone permissions...</p>}
 
-      {/* Microphone selection */}
-      <div>
-        <label>Select Microphone:</label>
-        <select onChange={(e) => setSelectedMic(e.target.value)}>
-          <option value="">Choose Microphone</option>
-          {devices.filter((device) => device.kind === 'audioinput').map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Microphone ${device.deviceId}`}
-            </option>
-          ))}
-        </select>
-
-        {/* Audio level indicator */}
-        <div>
-          <label>Microphone Level:</label>
-          <div style={{ width: '100px', height: '10px', background: 'gray' }}>
-            <div style={{ width: `${microphoneLevel}%`, height: '10px', background: 'green' }} />
+      {permissionsGranted && (
+        <>
+          {/* Camera selection */}
+          <div>
+            <label>Select Camera:</label>
+            <select onChange={(e) => setSelectedCamera(e.target.value)}>
+              <option value="">Choose Camera</option>
+              {devices.filter((device) => device.kind === 'videoinput').map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Camera ${device.deviceId}`}
+                </option>
+              ))}
+            </select>
+            <button onClick={startCameraPreview}>Start Camera</button>
           </div>
-        </div>
-      </div>
+          <video id="cameraPreview" width="400" autoPlay />
 
-      {/* Speaker selection */}
-      <div>
-        <label>Select Speaker (Headphones):</label>
-        <select onChange={(e) => setSelectedSpeaker(e.target.value)}>
-          <option value="">Choose Speaker</option>
-          {devices.filter((device) => device.kind === 'audiooutput').map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Speaker ${device.deviceId}`}
-            </option>
-          ))}
-        </select>
-        <button onClick={testSpeaker}>Test Speaker</button>
-      </div>
+          {/* Microphone selection */}
+          <div>
+            <label>Select Microphone:</label>
+            <select onChange={(e) => setSelectedMic(e.target.value)}>
+              <option value="">Choose Microphone</option>
+              {devices.filter((device) => device.kind === 'audioinput').map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Microphone ${device.deviceId}`}
+                </option>
+              ))}
+            </select>
+
+            {/* Audio level indicator */}
+            <div>
+              <label>Microphone Level:</label>
+              <div style={{ width: '100px', height: '10px', background: 'gray' }}>
+                <div style={{ width: `${microphoneLevel}%`, height: '10px', background: 'green' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Speaker selection */}
+          <div>
+            <label>Select Speaker (Headphones):</label>
+            <select onChange={(e) => setSelectedSpeaker(e.target.value)}>
+              <option value="">Choose Speaker</option>
+              {devices.filter((device) => device.kind === 'audiooutput').map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Speaker ${device.deviceId}`}
+                </option>
+              ))}
+            </select>
+            <button onClick={testSpeaker}>Test Speaker</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
