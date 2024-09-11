@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const DeviceSetup = () => {
   const [devices, setDevices] = useState([]);
@@ -7,15 +7,24 @@ const DeviceSetup = () => {
   const [selectedSpeaker, setSelectedSpeaker] = useState(null);
   const [audioContext, setAudioContext] = useState(null);
   const [microphoneLevel, setMicrophoneLevel] = useState(0);
+  const [error, setError] = useState(null);
 
-  // Get available devices on component mount
+  // Fetch available devices
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      setDevices(devices);
-    });
+    const fetchDevices = async () => {
+      try {
+        const deviceList = await navigator.mediaDevices.enumerateDevices();
+        setDevices(deviceList);
+      } catch (err) {
+        console.error('Error enumerating devices:', err);
+        setError('Unable to fetch devices. Please check your browser settings.');
+      }
+    };
+
+    fetchDevices();
   }, []);
 
-  // Initialize AudioContext for microphone testing
+  // Initialize AudioContext and start mic test if a microphone is selected
   useEffect(() => {
     if (selectedMic) {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -47,25 +56,33 @@ const DeviceSetup = () => {
         updateMicLevel();
       } else {
         console.error('Microphone not selected');
+        setError('Please select a microphone.');
       }
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      setError('Error accessing microphone. Please check your permissions.');
     }
   };
 
-  // Test speaker with a sample sound
+  // Function to test speaker
   const testSpeaker = () => {
     if (selectedSpeaker) {
-      const audio = new Audio('/test-sound.mp3'); // path to a sample audio file
-      audio.setSinkId(selectedSpeaker).then(() => {
-        audio.play();
-      }).catch((error) => console.error('Error setting speaker device:', error));
+      const audio = new Audio('/test-sound.mp3'); // Ensure this path is correct
+      audio.setSinkId(selectedSpeaker)
+        .then(() => {
+          audio.play();
+        })
+        .catch((error) => {
+          console.error('Error setting speaker device:', error);
+          setError('Error playing test sound. Please check your speaker settings.');
+        });
     } else {
       console.error('Speaker not selected');
+      setError('Please select a speaker.');
     }
   };
 
-  // Show video from the selected camera
+  // Function to start camera preview
   const startCameraPreview = async () => {
     if (selectedCamera) {
       try {
@@ -76,15 +93,19 @@ const DeviceSetup = () => {
         videoElement.srcObject = stream;
       } catch (error) {
         console.error('Error accessing camera:', error);
+        setError('Error accessing camera. Please check your permissions.');
       }
     } else {
       console.error('Camera not selected');
+      setError('Please select a camera.');
     }
   };
 
   return (
     <div>
       <h2>Setup Camera, Microphone, and Speaker</h2>
+      
+      {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {/* Camera selection */}
       <div>
