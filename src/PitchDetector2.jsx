@@ -1,4 +1,5 @@
-import  { useEffect, useState, useRef } from 'react';
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useState, useRef } from 'react';
 import { PitchDetector } from 'pitchfinder';
 
 const PitchDetectionApp = () => {
