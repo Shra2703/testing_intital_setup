@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+
 import React, { useState, useEffect } from 'react';
 
 const DeviceSetup = () => {
@@ -24,9 +25,11 @@ const DeviceSetup = () => {
         // Automatically select the first available microphone and camera
         const defaultMic = deviceList.find((device) => device.kind === 'audioinput');
         const defaultCamera = deviceList.find((device) => device.kind === 'videoinput');
+        const defaultSpeaker = deviceList.find((device) => device.kind === 'audiooutput');
 
         setSelectedMic(defaultMic?.deviceId || null);
         setSelectedCamera(defaultCamera?.deviceId || null);
+        setSelectedSpeaker(defaultSpeaker?.deviceId || null);
 
         console.log('Media stream granted:', stream);
       } catch (err) {
@@ -56,18 +59,22 @@ const DeviceSetup = () => {
         });
 
         const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;  // You can adjust this for smoother fluctuations
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
         const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
         const updateMicLevel = () => {
           analyser.getByteFrequencyData(dataArray);
-          const level = Math.max(...dataArray);
-          setMicrophoneLevel(level);
-          requestAnimationFrame(updateMicLevel);
+          const level = Math.max(...dataArray); // Get the highest audio frequency detected
+          const normalizedLevel = Math.min((level / 255) * 100, 100); // Normalize the value to 0-100 scale
+          setMicrophoneLevel(normalizedLevel); // Set the microphone level state
+          requestAnimationFrame(updateMicLevel); // Continue updating
         };
 
-        updateMicLevel();
+        updateMicLevel(); // Start the mic level fluctuation
       } else {
         console.error('Microphone not selected');
         setError('Please select a microphone.');
@@ -75,6 +82,24 @@ const DeviceSetup = () => {
     } catch (error) {
       console.error('Error accessing microphone:', error);
       setError('Error accessing microphone. Please check your permissions.');
+    }
+  };
+
+  // Function to test speaker
+  const testSpeaker = () => {
+    if (selectedSpeaker) {
+      const audio = new Audio('/test-sound2.mp3'); // Ensure this path is correct
+      audio.setSinkId(selectedSpeaker)
+        .then(() => {
+          audio.play();
+        })
+        .catch((error) => {
+          console.error('Error setting speaker device:', error);
+          setError('Error playing test sound. Please check your speaker settings.');
+        });
+    } else {
+      console.error('Speaker not selected');
+      setError('Please select a speaker.');
     }
   };
 
@@ -142,7 +167,6 @@ const DeviceSetup = () => {
           />
         </div>
       </div>
-      
 
       {/* Speaker selection */}
       <div>
@@ -154,6 +178,7 @@ const DeviceSetup = () => {
             </option>
           ))}
         </select>
+        <button onClick={testSpeaker}>Test Speaker</button>
       </div>
     </div>
   );
