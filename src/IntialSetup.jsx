@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-
 import React, { useState, useEffect } from 'react';
 
 const DeviceSetup = () => {
@@ -11,27 +10,33 @@ const DeviceSetup = () => {
   const [microphoneLevel, setMicrophoneLevel] = useState(0);
   const [error, setError] = useState(null);
 
+  // Function to fetch devices
+  const getDevices = async () => {
+    try {
+      const deviceList = await navigator.mediaDevices.enumerateDevices();
+      setDevices(deviceList);
+
+      // Automatically select the first available microphone, camera, and speaker
+      const defaultMic = deviceList.find((device) => device.kind === 'audioinput');
+      const defaultCamera = deviceList.find((device) => device.kind === 'videoinput');
+      const defaultSpeaker = deviceList.find((device) => device.kind === 'audiooutput');
+
+      setSelectedMic((prev) => prev || defaultMic?.deviceId || null);
+      setSelectedCamera((prev) => prev || defaultCamera?.deviceId || null);
+      setSelectedSpeaker((prev) => prev || defaultSpeaker?.deviceId || null);
+    } catch (err) {
+      console.error('Error fetching devices:', err);
+      setError('Unable to access media devices. Please check your permissions.');
+    }
+  };
+
   // Request permissions and fetch devices on component mount
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        // Request both camera and microphone access
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-
-        // Fetch and list devices after permissions are granted
-        const deviceList = await navigator.mediaDevices.enumerateDevices();
-        setDevices(deviceList);
-
-        // Automatically select the first available microphone and camera
-        const defaultMic = deviceList.find((device) => device.kind === 'audioinput');
-        const defaultCamera = deviceList.find((device) => device.kind === 'videoinput');
-        const defaultSpeaker = deviceList.find((device) => device.kind === 'audiooutput');
-
-        setSelectedMic(defaultMic?.deviceId || null);
-        setSelectedCamera(defaultCamera?.deviceId || null);
-        setSelectedSpeaker(defaultSpeaker?.deviceId || null);
-
-        console.log('Media stream granted:', stream);
+        // Request camera and microphone access
+        await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        await getDevices();
       } catch (err) {
         console.error('Error accessing media devices:', err);
         setError('Unable to access camera or microphone. Please check your permissions.');
@@ -39,6 +44,13 @@ const DeviceSetup = () => {
     };
 
     requestPermissions();
+
+    
+    navigator.mediaDevices.ondevicechange = getDevices;
+    
+    return () => {
+      navigator.mediaDevices.ondevicechange = null; // Clean up listener
+    };
   }, []);
 
   // Initialize AudioContext and start mic test if a microphone is selected
@@ -59,7 +71,7 @@ const DeviceSetup = () => {
         });
 
         const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;  // You can adjust this for smoother fluctuations
+        analyser.fftSize = 256;  
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
@@ -68,13 +80,13 @@ const DeviceSetup = () => {
 
         const updateMicLevel = () => {
           analyser.getByteFrequencyData(dataArray);
-          const level = Math.max(...dataArray); // Get the highest audio frequency detected
-          const normalizedLevel = Math.min((level / 255) * 100, 100); // Normalize the value to 0-100 scale
-          setMicrophoneLevel(normalizedLevel); // Set the microphone level state
-          requestAnimationFrame(updateMicLevel); // Continue updating
+          const level = Math.max(...dataArray); 
+          const normalizedLevel = Math.min((level / 255) * 100, 100); 
+          setMicrophoneLevel(normalizedLevel); 
+          requestAnimationFrame(updateMicLevel); 
         };
 
-        updateMicLevel(); // Start the mic level fluctuation
+        updateMicLevel();
       } else {
         console.error('Microphone not selected');
         setError('Please select a microphone.');
@@ -159,7 +171,7 @@ const DeviceSetup = () => {
             style={{
               width: `${microphoneLevel}%`,
               height: '100%',
-              background: microphoneLevel > 5 ? 'green' : 'gray', // Fluctuates green when detecting sound, gray when silent
+              background: microphoneLevel > 5 ? 'green' : 'gray',
               position: 'absolute',
               left: 0,
               transition: 'width 0.1s linear',
